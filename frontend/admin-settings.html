@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan Toko — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .admin-shell { max-width: 640px; margin: 0 auto; padding: 28px 20px 80px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--muted); }
+    .form-row input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .color-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .color-row input[type="color"] { height: 42px; padding: 4px; }
+    #save-msg { color: var(--success); font-size: 0.85rem; min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <span class="logo">Admin — <span id="admin-name"></span></span>
+      <button class="btn btn-outline" id="btn-logout" style="color:#fff;border-color:rgba(255,255,255,0.3);margin-left:auto;">Keluar</button>
+    </div>
+  </header>
+  <nav class="admin-nav" id="admin-nav"></nav>
+
+  <div class="admin-shell">
+    <h1>Pengaturan Toko</h1>
+    <form class="panel" id="settings-form">
+      <div class="form-row"><label>Nama Toko</label><input id="s-store-name"></div>
+      <div class="form-row"><label>URL Logo</label><input id="s-store-logo" placeholder="https://..."></div>
+      <div class="form-row"><label>Deskripsi Toko</label><input id="s-store-desc"></div>
+
+      <div class="form-row"><label>Nomor WhatsApp (contoh: 081234567890)</label><input id="s-wa-number"></div>
+      <div class="form-row"><label>Kode Negara</label><input id="s-wa-country" value="62"></div>
+
+      <div class="form-row">
+        <label>Warna Tema</label>
+        <div class="color-row">
+          <input type="color" id="s-color-primary">
+          <input type="color" id="s-color-secondary">
+          <input type="color" id="s-color-accent">
+        </div>
+      </div>
+
+      <div class="form-row"><label>Teks Info Pengiriman Default</label><input id="s-shipping-text"></div>
+      <div class="form-row"><label>Teks Footer</label><input id="s-footer-text"></div>
+      <div class="form-row"><label>Alamat Kontak</label><input id="s-contact-address"></div>
+      <div class="form-row"><label>Email Kontak</label><input id="s-contact-email"></div>
+      <div class="form-row"><label>Instagram</label><input id="s-instagram"></div>
+      <div class="form-row"><label>Facebook</label><input id="s-facebook"></div>
+      <div class="form-row"><label>TikTok</label><input id="s-tiktok"></div>
+
+      <div id="save-msg"></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Simpan Pengaturan</button>
+    </form>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script>
+    AdminAuth.requireLogin();
+    document.getElementById('admin-name').textContent = AdminAuth.username;
+    renderAdminNav('settings');
+
+    const fieldMap = {
+      StoreName: 's-store-name', StoreLogo: 's-store-logo', StoreDescription: 's-store-desc',
+      WhatsAppNumber: 's-wa-number', WhatsAppCountryCode: 's-wa-country',
+      PrimaryColor: 's-color-primary', SecondaryColor: 's-color-secondary', AccentColor: 's-color-accent',
+      ShippingText: 's-shipping-text', FooterText: 's-footer-text',
+      ContactAddress: 's-contact-address', ContactEmail: 's-contact-email',
+      Instagram: 's-instagram', Facebook: 's-facebook', TikTok: 's-tiktok'
+    };
+
+    async function loadSettings() {
+      const res = await Api.get('settings');
+      if (!res.success) return alert('Gagal memuat pengaturan: ' + res.message);
+      Object.entries(fieldMap).forEach(([key, id]) => {
+        const el = document.getElementById(id);
+        if (el && res.data[key] !== undefined) el.value = res.data[key];
+      });
+    }
+
+    document.getElementById('settings-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const settings = {};
+      Object.entries(fieldMap).forEach(([key, id]) => {
+        settings[key] = document.getElementById(id).value;
+      });
+      const res = await Api.post('updateSettings', { token: AdminAuth.token, settings });
+      const msg = document.getElementById('save-msg');
+      msg.textContent = res.success ? 'Pengaturan tersimpan.' : 'Gagal: ' + res.message;
+      msg.style.color = res.success ? 'var(--success)' : 'var(--danger)';
+    });
+
+    loadSettings();
+  </script>
+</body>
+</html>

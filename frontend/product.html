@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Produk — Toko Saya</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Karla:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .pd-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; padding: 32px 20px 40px; max-width: 1100px; margin: 0 auto; }
+    .gallery-main { aspect-ratio: 1/1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
+    .gallery-main img { width: 100%; height: 100%; object-fit: contain; }
+    .gallery-thumbs { display: flex; gap: 8px; }
+    .gallery-thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); border: 2px solid var(--border); cursor: pointer; }
+    .gallery-thumbs img.active { border-color: var(--accent); }
+    .breadcrumb { font-size: 0.82rem; color: var(--muted); padding: 16px 20px 0; max-width: 1100px; margin: 0 auto; }
+    .pd-info .sold { font-family: var(--font-data); color: var(--muted); font-size: 0.85rem; }
+    .pd-price { margin: 14px 0; }
+    .pd-price .price { font-size: 1.6rem; }
+    .stock-note { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; }
+    .variant-group { margin-bottom: 18px; }
+    .variant-group h4 { font-size: 0.85rem; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .variant-options { display: flex; gap: 8px; flex-wrap: wrap; }
+    .variant-chip {
+      padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: 0.9rem;
+    }
+    .variant-chip.active { border-color: var(--primary); background: var(--primary); color: var(--surface); }
+    .qty-control { display: flex; align-items: center; gap: 10px; margin: 18px 0; }
+    .qty-control button { width: 34px; height: 34px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm); cursor: pointer; font-size: 1rem; }
+    .qty-control input { width: 50px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px; font-family: var(--font-data); }
+    .pd-actions { display: flex; gap: 12px; margin-top: 20px; }
+    .pd-actions .btn { flex: 1; justify-content: center; }
+    .pd-section { max-width: 1100px; margin: 0 auto; padding: 0 20px 40px; }
+    .pd-section h3 { border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .shipping-info { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-size: 0.9rem; }
+    @media (max-width: 760px) {
+      .pd-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo" data-store-name>Toko Saya</a>
+      <div class="search-bar"><input type="search" id="global-search" placeholder="Cari produk..."></div>
+      <a href="cart.html" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3)">
+        Keranjang <span data-cart-count style="margin-left:4px;">0</span>
+      </a>
+    </div>
+  </header>
+
+  <nav class="breadcrumb"><a href="index.html">Beranda</a> / <a href="shop.html">Produk</a> / <span id="crumb-name">...</span></nav>
+
+  <div id="pd-loading" style="text-align:center;padding:80px 0;color:var(--muted);">Memuat produk...</div>
+  <div id="pd-not-found" hidden style="text-align:center;padding:80px 0;color:var(--muted);">Produk tidak ditemukan.</div>
+
+  <div class="pd-layout" id="pd-content" hidden>
+    <div class="pd-gallery">
+      <div class="gallery-main"><img id="gallery-main-img" src="" alt=""></div>
+      <div class="gallery-thumbs" id="gallery-thumbs"></div>
+    </div>
+
+    <div class="pd-info">
+      <h1 id="pd-name" style="font-size:1.5rem;"></h1>
+      <div class="sold" id="pd-sold"></div>
+
+      <div class="pd-price">
+        <span class="price-strike" id="pd-price-original" hidden></span>
+        <span class="price" id="pd-price-current"></span>
+      </div>
+
+      <div class="stock-note" id="pd-stock"></div>
+
+      <div id="pd-variants"></div>
+
+      <div class="qty-control">
+        <button id="qty-minus" type="button">−</button>
+        <input type="number" id="qty-input" value="1" min="1">
+        <button id="qty-plus" type="button">+</button>
+      </div>
+
+      <div class="pd-actions">
+        <button class="btn btn-outline" id="btn-add-cart">+ Keranjang</button>
+        <a class="btn btn-whatsapp" id="btn-order-now">🟢 Pesan via WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="pd-section" id="pd-details" hidden>
+    <h3>Deskripsi</h3>
+    <p id="pd-description" class="text-muted"></p>
+
+    <h3>Informasi Pengiriman</h3>
+    <div class="shipping-info" id="pd-shipping"></div>
+
+    <div id="pd-related-wrap" hidden>
+      <h3>Produk Terkait</h3>
+      <div class="product-grid" id="pd-related"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p data-store-footer>&nbsp;</p>
+      <p>&copy; <span id="year"></span> <span data-store-name>Toko Saya</span></p>
+    </div>
+  </footer>
+
+  <a href="#" class="wa-float btn btn-whatsapp">🟢 Chat Toko</a>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/cart.js"></script>
+  <script src="assets/js/products.js"></script>
+  <script src="assets/js/product-detail.js"></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.getElementById('global-search').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.value.trim()) {
+        window.location.href = 'shop.html?q=' + encodeURIComponent(e.target.value.trim());
+      }
+    });
+    ProductDetailPage.init();
+  </script>
+</body>
+</html>

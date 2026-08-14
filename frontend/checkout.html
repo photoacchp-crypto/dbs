@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Toko Saya</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .checkout-layout { max-width: 900px; margin: 0 auto; padding: 32px 20px 100px; display: grid; grid-template-columns: 1fr 340px; gap: 28px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--muted); }
+    .form-row input, .form-row textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.95rem;
+    }
+    .form-row.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .summary-item { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
+    .summary-row.total { font-weight: 700; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
+    #checkout-error { color: var(--danger); font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
+    @media (max-width: 760px) {
+      .checkout-layout { grid-template-columns: 1fr; }
+      .form-row.two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo" data-store-name>Toko Saya</a>
+    </div>
+  </header>
+
+  <div class="checkout-layout">
+    <div class="panel">
+      <h2 style="margin-top:0;">Data Pembeli</h2>
+      <form id="checkout-form">
+        <div class="form-row"><label>Nama Lengkap</label><input type="text" id="f-name" required></div>
+        <div class="form-row"><label>Nomor WhatsApp</label><input type="tel" id="f-whatsapp" placeholder="08xxxxxxxxxx" required></div>
+        <div class="form-row"><label>Alamat</label><textarea id="f-address" rows="3" required></textarea></div>
+        <div class="form-row two-col">
+          <div><label>Kota</label><input type="text" id="f-city"></div>
+          <div><label>Provinsi</label><input type="text" id="f-province"></div>
+        </div>
+        <div class="form-row"><label>Kode Pos</label><input type="text" id="f-postal"></div>
+        <div class="form-row"><label>Catatan (opsional)</label><textarea id="f-notes" rows="2"></textarea></div>
+
+        <div id="checkout-error"></div>
+        <button type="submit" class="btn btn-whatsapp" id="btn-submit" style="width:100%;justify-content:center;">🟢 Pesan via WhatsApp</button>
+      </form>
+    </div>
+
+    <div class="panel" style="align-self:start;">
+      <h3 style="margin-top:0;">Ringkasan Pesanan</h3>
+      <div id="checkout-items"></div>
+      <div class="summary-item total"><span>Subtotal</span><span class="price" id="co-subtotal">Rp0</span></div>
+      <div class="summary-item"><span>Ongkos Kirim</span><span class="text-muted">Dikonfirmasi via WhatsApp</span></div>
+      <div class="summary-item total"><span>Total</span><span class="price" id="co-total">Rp0</span></div>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/cart.js"></script>
+  <script src="assets/js/products.js"></script>
+  <script src="assets/js/checkout.js"></script>
+</body>
+</html>

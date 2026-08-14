@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Produk — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .admin-shell { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; }
+    .toolbar input { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .edit-input { width: 90px; padding: 5px 6px; border: 1px solid var(--border); border-radius: 6px; font-family: var(--font-data); font-size: 0.82rem; }
+    .row-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; background: var(--background); }
+    .small-btn { font-size: 0.78rem; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <span class="logo">Admin — <span id="admin-name"></span></span>
+      <button class="btn btn-outline" id="btn-logout" style="color:#fff;border-color:rgba(255,255,255,0.3);margin-left:auto;">Keluar</button>
+    </div>
+  </header>
+  <nav class="admin-nav" id="admin-nav"></nav>
+
+  <div class="admin-shell">
+    <h1>Kelola Produk</h1>
+    <div class="toolbar">
+      <input type="search" id="search-input" placeholder="Cari nama produk / SKU...">
+      <select id="status-filter">
+        <option value="">Semua Status</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+      </select>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table class="admin-table">
+        <thead>
+          <tr><th></th><th>SKU</th><th>Nama</th><th>Harga</th><th>Stok</th><th>Status</th><th>Aksi</th></tr>
+        </thead>
+        <tbody id="product-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script>
+    AdminAuth.requireLogin();
+    document.getElementById('admin-name').textContent = AdminAuth.username;
+    renderAdminNav('products');
+
+    let allProducts = [];
+
+    async function loadProducts() {
+      const q = document.getElementById('search-input').value.trim();
+      const status = document.getElementById('status-filter').value;
+      const res = await Api.get('adminProducts', { token: AdminAuth.token, q, status });
+      if (!res.success) { alert('Gagal memuat produk: ' + res.message); return; }
+      allProducts = res.data.items;
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('product-table-body');
+      if (!allProducts.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Belum ada produk. Import lewat menu Import Excel.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = allProducts.map(p => `
+        <tr data-id="${p.ID}">
+          <td><img class="row-thumb" src="${p.CoverImage || ''}" onerror="this.style.visibility='hidden'"></td>
+          <td>${p.SKU}</td>
+          <td>${escapeHtml(p.ProductName)}</td>
+          <td><input class="edit-input price-input" value="${p.Price}"></td>
+          <td><input class="edit-input stock-input" value="${p.Stock}"></td>
+          <td><span class="status-pill ${String(p.Status).toLowerCase()}">${p.Status}</span></td>
+          <td>
+            <button class="btn btn-outline small-btn save-btn">Simpan</button>
+            <button class="btn btn-outline small-btn toggle-btn">${p.Status === 'Inactive' ? 'Aktifkan' : 'Nonaktifkan'}</button>
+            <button class="btn btn-outline small-btn delete-btn" style="color:var(--danger);">Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('tr').forEach(row => {
+        const id = row.dataset.id;
+        row.querySelector('.save-btn').addEventListener('click', async () => {
+          const price = Number(row.querySelector('.price-input').value);
+          const stock = Number(row.querySelector('.stock-input').value);
+          const res = await Api.post('adminUpdateProduct', { token: AdminAuth.token, id, patch: { Price: price, Stock: stock } });
+          if (!res.success) return alert('Gagal menyimpan: ' + res.message);
+          loadProducts();
+        });
+        row.querySelector('.toggle-btn').addEventListener('click', async () => {
+          const product = allProducts.find(p => p.ID === id);
+          const newStatus = product.Status === 'Inactive' ? 'Active' : 'Inactive';
+          const res = await Api.post('adminSetProductStatus', { token: AdminAuth.token, id, status: newStatus });
+          if (!res.success) return alert('Gagal mengubah status: ' + res.message);
+          loadProducts();
+        });
+        row.querySelector('.delete-btn').addEventListener('click', async () => {
+          if (!confirm('Hapus produk ini secara permanen?')) return;
+          const res = await Api.post('adminDeleteProduct', { token: AdminAuth.token, id });
+          if (!res.success) return alert('Gagal menghapus: ' + res.message);
+          loadProducts();
+        });
+      });
+    }
+
+    document.getElementById('search-input').addEventListener('input', debounce(loadProducts, 350));
+    document.getElementById('status-filter').addEventListener('change', loadProducts);
+
+    function debounce(fn, ms) {
+      let t;
+      return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>

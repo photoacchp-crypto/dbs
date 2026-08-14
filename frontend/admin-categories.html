@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Kategori — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .admin-shell { max-width: 800px; margin: 0 auto; padding: 28px 20px 80px; }
+    .add-form { display: flex; gap: 10px; margin-bottom: 20px; }
+    .add-form input { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .edit-input { width: 100%; padding: 5px 6px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+    .small-btn { font-size: 0.78rem; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <span class="logo">Admin — <span id="admin-name"></span></span>
+      <button class="btn btn-outline" id="btn-logout" style="color:#fff;border-color:rgba(255,255,255,0.3);margin-left:auto;">Keluar</button>
+    </div>
+  </header>
+  <nav class="admin-nav" id="admin-nav"></nav>
+
+  <div class="admin-shell">
+    <h1>Kelola Kategori</h1>
+
+    <form class="add-form" id="add-form">
+      <input type="text" id="new-name" placeholder="Nama kategori baru" required>
+      <button class="btn btn-primary" type="submit">Tambah</button>
+    </form>
+
+    <table class="admin-table">
+      <thead><tr><th>Nama</th><th>Slug</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody id="category-table-body"></tbody>
+    </table>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script>
+    AdminAuth.requireLogin();
+    document.getElementById('admin-name').textContent = AdminAuth.username;
+    renderAdminNav('categories');
+
+    async function loadCategories() {
+      const res = await Api.get('adminCategoriesAll', { token: AdminAuth.token });
+      if (!res.success) return alert('Gagal memuat kategori: ' + res.message);
+      renderTable(res.data);
+    }
+
+    function renderTable(categories) {
+      const tbody = document.getElementById('category-table-body');
+      tbody.innerHTML = categories.length ? categories.map(c => `
+        <tr data-id="${c.ID}">
+          <td><input class="edit-input name-input" value="${c.Name}"></td>
+          <td class="text-muted">${c.Slug}</td>
+          <td><span class="status-pill ${String(c.Status).toLowerCase()}">${c.Status}</span></td>
+          <td>
+            <button class="btn btn-outline small-btn save-btn">Simpan</button>
+            <button class="btn btn-outline small-btn toggle-btn">${c.Status === 'Inactive' ? 'Aktifkan' : 'Nonaktifkan'}</button>
+            <button class="btn btn-outline small-btn delete-btn" style="color:var(--danger);">Hapus</button>
+          </td>
+        </tr>
+      `).join('') : '<tr><td colspan="4" class="text-muted">Belum ada kategori.</td></tr>';
+
+      tbody.querySelectorAll('tr').forEach(row => {
+        const id = row.dataset.id;
+        row.querySelector('.save-btn').addEventListener('click', async () => {
+          const name = row.querySelector('.name-input').value.trim();
+          const res = await Api.post('adminUpdateCategory', { token: AdminAuth.token, id, patch: { Name: name } });
+          if (!res.success) return alert('Gagal: ' + res.message);
+          loadCategories();
+        });
+        row.querySelector('.toggle-btn').addEventListener('click', async () => {
+          const cat = categories.find(c => c.ID === id);
+          const newStatus = cat.Status === 'Inactive' ? 'Active' : 'Inactive';
+          const res = await Api.post('adminUpdateCategory', { token: AdminAuth.token, id, patch: { Status: newStatus } });
+          if (!res.success) return alert('Gagal: ' + res.message);
+          loadCategories();
+        });
+        row.querySelector('.delete-btn').addEventListener('click', async () => {
+          if (!confirm('Hapus kategori ini?')) return;
+          const res = await Api.post('adminDeleteCategory', { token: AdminAuth.token, id });
+          if (!res.success) return alert('Gagal: ' + res.message);
+          loadCategories();
+        });
+      });
+    }
+
+    document.getElementById('add-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('new-name').value.trim();
+      if (!name) return;
+      const res = await Api.post('adminCreateCategory', { token: AdminAuth.token, data: { Name: name } });
+      if (!res.success) return alert('Gagal menambah kategori: ' + res.message);
+      document.getElementById('new-name').value = '';
+      loadCategories();
+    });
+
+    loadCategories();
+  </script>
+</body>
+</html>
