@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Excel Shopee — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .admin-shell { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+    .upload-box {
+      border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px;
+      text-align: center; cursor: pointer; color: var(--muted);
+    }
+    .upload-box:hover { border-color: var(--accent); }
+    .file-meta { font-family: var(--font-data); font-size: 0.85rem; color: var(--muted); margin-top: 12px; }
+    .group-check { display: flex; gap: 8px; align-items: center; font-size: 0.9rem; margin-bottom: 6px; }
+    .group-check .ok { color: var(--success); }
+    .group-check .missing { color: var(--muted); }
+    .summary-bar { display: flex; gap: 20px; font-family: var(--font-data); margin: 16px 0; }
+    .summary-bar .valid { color: var(--success); }
+    .summary-bar .warning { color: var(--warning); }
+    .summary-bar .error { color: var(--danger); }
+    table.preview { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    table.preview th, table.preview td { border-bottom: 1px solid var(--border); padding: 8px 6px; text-align: left; }
+    .level-valid { color: var(--success); }
+    .level-warning { color: var(--warning); }
+    .level-error { color: var(--danger); }
+    .mode-picker label { display: block; margin-bottom: 8px; font-size: 0.9rem; }
+    .unknown-headers { font-size: 0.8rem; color: var(--muted); }
+    .actions { display: flex; gap: 12px; margin-top: 16px; }
+    #import-report { white-space: pre-wrap; font-family: var(--font-data); font-size: 0.85rem; background: var(--background); padding: 16px; border-radius: var(--radius-sm); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <span class="logo">Admin — <span id="admin-name"></span></span>
+      <button class="btn btn-outline" id="btn-logout" style="color:#fff;border-color:rgba(255,255,255,0.3);margin-left:auto;">Keluar</button>
+    </div>
+  </header>
+  <nav class="admin-nav" id="admin-nav"></nav>
+
+  <div class="admin-shell">
+    <h1>Import Data Shopee</h1>
+    <p class="text-muted">Upload file export Excel dari Shopee. Data akan dicek dulu (preview) sebelum benar-benar disimpan.</p>
+
+    <div class="panel">
+      <div class="upload-box" id="upload-box">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden>
+        <p><strong>Klik untuk pilih file</strong> atau tarik file ke sini (.xlsx, .xls, .csv)</p>
+      </div>
+      <div class="file-meta" id="file-meta" hidden></div>
+    </div>
+
+    <div class="panel" id="detected-panel" hidden>
+      <h3>Data Terdeteksi</h3>
+      <div id="detected-groups"></div>
+      <div class="unknown-headers" id="unknown-headers"></div>
+    </div>
+
+    <div class="panel" id="preview-panel" hidden>
+      <h3>Preview</h3>
+      <div class="summary-bar">
+        <span class="valid">✓ <span id="count-valid">0</span> valid</span>
+        <span class="warning">⚠ <span id="count-warning">0</span> warning</span>
+        <span class="error">✕ <span id="count-error">0</span> error</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="preview">
+          <thead>
+            <tr><th>SKU</th><th>Nama Produk</th><th>Kategori</th><th>Harga</th><th>Stok</th><th>Varian</th><th>Media</th><th>Status</th></tr>
+          </thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+
+      <div class="mode-picker" style="margin-top:20px;">
+        <h4>Mode Import</h4>
+        <label><input type="radio" name="mode" value="merge" checked> <strong>Merge</strong> — produk baru dibuat, produk lama diperbarui, field kosong tidak menghapus data lama (default)</label>
+        <label><input type="radio" name="mode" value="update_only"> <strong>Update Only</strong> — hanya perbarui SKU yang sudah ada</label>
+        <label><input type="radio" name="mode" value="replace"> <strong>Replace</strong> — data dari file jadi sumber terbaru sepenuhnya (menimpa)</label>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-outline" id="btn-cancel">Batalkan</button>
+        <button class="btn btn-primary" id="btn-import">Import Data</button>
+      </div>
+    </div>
+
+    <div class="panel" id="report-panel" hidden>
+      <h3>Hasil Import</h3>
+      <div id="import-report"></div>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script src="assets/js/import.js"></script>
+  <script>
+    AdminAuth.requireLogin();
+    document.getElementById('admin-name').textContent = AdminAuth.username;
+    renderAdminNav('import');
+  </script>
+</body>
+</html>

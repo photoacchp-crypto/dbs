@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pesanan — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+  <style>
+    .admin-shell { max-width: 1000px; margin: 0 auto; padding: 28px 20px 80px; }
+    .toolbar { margin-bottom: 16px; }
+    .toolbar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .status-select { font-size: 0.82rem; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); }
+    tr.expandable { cursor: pointer; }
+    .order-detail-row td { background: var(--background); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <span class="logo">Admin — <span id="admin-name"></span></span>
+      <button class="btn btn-outline" id="btn-logout" style="color:#fff;border-color:rgba(255,255,255,0.3);margin-left:auto;">Keluar</button>
+    </div>
+  </header>
+  <nav class="admin-nav" id="admin-nav"></nav>
+
+  <div class="admin-shell">
+    <h1>Pesanan</h1>
+    <div class="toolbar">
+      <select id="status-filter">
+        <option value="">Semua Status</option>
+        <option value="Draft">Draft</option>
+        <option value="Pending">Pending</option>
+        <option value="Confirmed">Confirmed</option>
+        <option value="Processing">Processing</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+    </div>
+
+    <table class="admin-table">
+      <thead><tr><th>Order</th><th>Pembeli</th><th>WhatsApp</th><th>Total</th><th>Status</th><th>Tanggal</th></tr></thead>
+      <tbody id="order-table-body"></tbody>
+    </table>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script>
+    AdminAuth.requireLogin();
+    document.getElementById('admin-name').textContent = AdminAuth.username;
+    renderAdminNav('orders');
+
+    const STATUS_OPTIONS = ['Draft','Pending','Confirmed','Processing','Completed','Cancelled'];
+
+    async function loadOrders() {
+      const status = document.getElementById('status-filter').value;
+      const res = await Api.get('adminOrders', { token: AdminAuth.token, status });
+      if (!res.success) return alert('Gagal memuat pesanan: ' + res.message);
+      renderTable(res.data.items);
+    }
+
+    function renderTable(orders) {
+      const tbody = document.getElementById('order-table-body');
+      tbody.innerHTML = orders.length ? orders.map(o => `
+        <tr data-id="${o.ID}">
+          <td>${o.OrderNumber}</td>
+          <td>${escapeHtml(o.CustomerName)}</td>
+          <td>${o.WhatsApp}</td>
+          <td>${formatCurrency(o.GrandTotal)}</td>
+          <td>
+            <select class="status-select">
+              ${STATUS_OPTIONS.map(s => `<option value="${s}" ${s === o.Status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+          <td>${new Date(o.CreatedAt).toLocaleString('id-ID')}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="6" class="text-muted">Belum ada pesanan.</td></tr>';
+
+      tbody.querySelectorAll('tr').forEach(row => {
+        const id = row.dataset.id;
+        const select = row.querySelector('.status-select');
+        if (!select) return;
+        select.addEventListener('change', async () => {
+          const res = await Api.post('adminUpdateOrderStatus', { token: AdminAuth.token, id, status: select.value });
+          if (!res.success) alert('Gagal mengubah status: ' + res.message);
+        });
+      });
+    }
+
+    document.getElementById('status-filter').addEventListener('change', loadOrders);
+    loadOrders();
+  </script>
+</body>
+</html>
